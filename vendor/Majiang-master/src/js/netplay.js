@@ -23,6 +23,8 @@ const localRule = localParams.get('rule') || 'Mリーグルール';
 const localPlatform = localParams.get('platform') || '';
 const remoteWebMode = localMode && localParams.get('renderer') == 'web';
 const windowsDesktop = localMode && localPlatform == 'windows';
+const tabletWebMode = remoteWebMode
+                   && window.matchMedia?.('(pointer: coarse)').matches;
 if (localMode) {
     // The native macOS table intentionally has its own compact landscape UI.
     // Android uses mortal-android.js and keeps the phone-specific layout.
@@ -32,6 +34,9 @@ if (localMode) {
     }
     if (windowsDesktop) {
         document.documentElement.classList.add('windows-app');
+    }
+    if (tabletWebMode) {
+        document.documentElement.classList.add('tablet-web');
     }
 }
 
@@ -104,6 +109,24 @@ function pinLocalViewport() {
     document.body.scrollTop = 0;
     document.body.scrollLeft = 0;
     window.scrollTo(0, 0);
+}
+
+function installTabletFullscreen() {
+    if (! tabletWebMode || $('#tablet-fullscreen').length) return;
+    $('body').append('<button id="tablet-fullscreen" type="button">全屏显示</button>');
+    const button = $('#tablet-fullscreen');
+    button.on('click', async ()=>{
+        try {
+            await document.documentElement.requestFullscreen({ navigationUI: 'hide' });
+            try { await screen.orientation?.lock?.('landscape'); }
+            catch (_) {}
+        }
+        catch (error) {
+            console.warn('无法进入全屏', error);
+        }
+        setTimeout(fitBoard, 50);
+    });
+    document.addEventListener('fullscreenchange', ()=>setTimeout(fitBoard, 50));
 }
 
 class LocalHumanPlayer extends Majiang.UI.Player {
@@ -644,8 +667,16 @@ function fitBoard() {
         // Native full screen becomes wide enough to switch to the 800 x 450
         // compact landscape board.  Only an actual resize changes this scale;
         // turns and focused tiles do not.
-        const width = document.documentElement.clientWidth || 800;
-        const height = document.documentElement.clientHeight || 680;
+        const viewport = remoteWebMode ? window.visualViewport : null;
+        const width = viewport?.width || document.documentElement.clientWidth || 800;
+        const height = viewport?.height || document.documentElement.clientHeight || 680;
+        if (remoteWebMode) {
+            // Chrome on tablets reports 100vh using the larger layout viewport,
+            // which includes space hidden behind its tab/address bars.  Size the
+            // fixed board container to the actually visible area instead.
+            document.body.style.width = `${width}px`;
+            document.body.style.height = `${height}px`;
+        }
         const baseHeight = width / height >= 1.5 ? 450 : 680;
         const ratio = Math.min(width / 800, height / baseHeight);
 
@@ -686,6 +717,7 @@ function fitBoard() {
 $(function(){
 
     if (localMode) applyLocalTileSkin();
+    installTabletFullscreen();
 
     const pai   = Majiang.UI.pai($('#loaddata'));
     const audio = Majiang.UI.audio($('#loaddata'));
@@ -1143,6 +1175,7 @@ $(function(){
     if (localMode) {
         $(window).on('scroll', pinLocalViewport);
         window.visualViewport?.addEventListener('scroll', pinLocalViewport);
+        window.visualViewport?.addEventListener('resize', fitBoard);
     }
     $('#room form').on('submit', (ev)=>{
         let room = $('input[name="room_no"]', $(ev.target)).val();

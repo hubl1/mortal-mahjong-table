@@ -55,6 +55,29 @@ html.electron-app
         image-rendering: pixelated !important
 
 html.desktop-app
+    #tablet-fullscreen
+        display: none
+
+    &.tablet-web
+        #tablet-fullscreen
+            display: block
+            position: fixed
+            z-index: 80
+            left: 18px
+            top: 18px
+            width: auto
+            margin: 0
+            padding: 9px 14px
+            border: 1px solid rgba(255,255,255,.5)
+            border-radius: 8px
+            color: #fff
+            background: rgba(3,42,36,.92)
+            box-shadow: 0 3px 14px rgba(0,0,0,.28)
+            font: 600 15px/1.2 sans-serif
+            cursor: pointer
+        &:fullscreen #tablet-fullscreen
+            display: none
+
     #mortal-name-panel
         position: fixed
         z-index: 200
