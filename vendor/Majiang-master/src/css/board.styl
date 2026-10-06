@@ -80,9 +80,16 @@ html.desktop-app
 
     &.touch-web
         #board > .board
+            .pai[role="button"]
             .player-button .button
             .select-mianzi .mianzi
                 touch-action: none
+                -webkit-tap-highlight-color: transparent
+                outline: none !important
+                box-shadow: none !important
+            .pai[role="button"]:focus
+            .pai[role="button"]:active
+                outline: none !important
                 -webkit-tap-highlight-color: transparent
 
     #mortal-name-panel
