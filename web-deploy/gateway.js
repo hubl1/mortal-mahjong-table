@@ -155,37 +155,55 @@ function savePaipu(payload) {
   const files = [`${base}_Majiang.json`, `${base}_Tenhou.json`];
   fs.writeFileSync(path.join(paipuDir, files[0]), JSON.stringify(majiang, null, 2));
   fs.writeFileSync(path.join(paipuDir, files[1]), JSON.stringify(tenhou, null, 2));
-  const decisions = Array.isArray(payload.review_decisions) ? payload.review_decisions : [];
-  if (decisions.length) {
-    const reviewDir = fs.mkdtempSync(path.join(logsDir, "review-build-"));
-    const reportName = `${base}_Review.json`;
-    try {
-      fs.writeFileSync(path.join(reviewDir, "game-paipu.json"), JSON.stringify(majiang));
-      fs.writeFileSync(path.join(reviewDir, "game-tenhou.json"), JSON.stringify(tenhou));
-      fs.writeFileSync(path.join(reviewDir, "decisions.json"), JSON.stringify(decisions));
-      const build = spawnSync(node, [
-        path.join(root, "tools", "build-killer-report.js"),
-        reviewDir,
-        path.join(paipuDir, reportName),
-      ], {
-        cwd: root,
-        env: {
-          ...process.env,
-          MORTAL_REVIEW_PLAYER: playerName,
-          MORTAL_REVIEW_MODEL: path.basename(process.env.MORTAL_MODEL_PATH || "mortal-finetune-ours560-step-1100000.pth"),
-        },
-        encoding: "utf8",
-      });
-      if (build.status !== 0) {
-        throw new Error((build.stderr || build.stdout || "Mortal review build failed").trim());
-      }
-      files.push(reportName);
-    }
-    finally {
-      fs.rmSync(reviewDir, { recursive: true, force: true });
-    }
+  return { save_id: base, files };
+}
+
+function saveReview(payload) {
+  const base = String(payload.save_id || "");
+  if (path.basename(base) !== base
+      || !/^\d{8}_\d{6}_.{1,100}$/u.test(base)
+      || /[\\/\u0000-\u001f\u007f]/.test(base)) {
+    throw new Error("invalid save id");
   }
-  return files;
+  const majiangFile = path.join(paipuDir, `${base}_Majiang.json`);
+  const tenhouFile = path.join(paipuDir, `${base}_Tenhou.json`);
+  if (!fs.existsSync(majiangFile) || !fs.existsSync(tenhouFile)) {
+    throw new Error("saved paipu not found");
+  }
+  const decisions = Array.isArray(payload.review_decisions)
+    ? payload.review_decisions : [];
+  if (!decisions.length) return { files: [] };
+
+  const majiang = JSON.parse(fs.readFileSync(majiangFile, "utf8"));
+  const tenhou = JSON.parse(fs.readFileSync(tenhouFile, "utf8"));
+  const playerName = normalizePlayerName(majiang?._mortal?.player_name);
+  const reviewDir = fs.mkdtempSync(path.join(logsDir, "review-build-"));
+  const reportName = `${base}_Review.json`;
+  try {
+    fs.writeFileSync(path.join(reviewDir, "game-paipu.json"), JSON.stringify(majiang));
+    fs.writeFileSync(path.join(reviewDir, "game-tenhou.json"), JSON.stringify(tenhou));
+    fs.writeFileSync(path.join(reviewDir, "decisions.json"), JSON.stringify(decisions));
+    const build = spawnSync(node, [
+      path.join(root, "tools", "build-killer-report.js"),
+      reviewDir,
+      path.join(paipuDir, reportName),
+    ], {
+      cwd: root,
+      env: {
+        ...process.env,
+        MORTAL_REVIEW_PLAYER: playerName,
+        MORTAL_REVIEW_MODEL: path.basename(process.env.MORTAL_MODEL_PATH || "mortal-finetune-ours560-step-1100000.pth"),
+      },
+      encoding: "utf8",
+    });
+    if (build.status !== 0) {
+      throw new Error((build.stderr || build.stdout || "Mortal review build failed").trim());
+    }
+    return { files: [reportName] };
+  }
+  finally {
+    fs.rmSync(reviewDir, { recursive: true, force: true });
+  }
 }
 
 function escapeHtml(value) {
@@ -222,7 +240,10 @@ async function handleApi(req, res, url) {
       return json(res, 200, { ok: true, started: spawnBots(room) });
     }
     if (url === "/mortal-api/save-paipu" && req.method === "POST") {
-      return json(res, 200, { ok: true, files: savePaipu(await readJson(req)) });
+      return json(res, 200, { ok: true, ...savePaipu(await readJson(req)) });
+    }
+    if (url === "/mortal-api/save-review" && req.method === "POST") {
+      return json(res, 200, { ok: true, ...saveReview(await readJson(req)) });
     }
     if (url === "/mortal-api/paipu" && req.method === "GET") return paipuIndex(res);
     if (url.startsWith("/mortal-api/files/") && req.method === "GET") {
@@ -291,4 +312,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { localSeatMetadata, savePaipu };
+module.exports = { localSeatMetadata, savePaipu, saveReview };

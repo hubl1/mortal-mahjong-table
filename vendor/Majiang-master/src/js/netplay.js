@@ -49,7 +49,9 @@ if (localMode) {
 let loaded;
 let fitFrame;
 let remotePaipuSavePromise = null;
+let remotePaipuReviewPromise = null;
 let remotePaipuFiles = [];
+let remotePaipuStatusText = '';
 let localReviewPlayerID = 0;
 let localPlayerName = '本地玩家';
 
@@ -839,35 +841,77 @@ $(function(){
     function exportLocalPaipu(paipu, reviewReady = Promise.resolve([])) {
         if (! localMode || localPaipuExported || ! paipu) return;
         localPaipuExported = true;
-        remotePaipuSavePromise = Promise.resolve(reviewReady).then(decisions=>{
-            const payload = {
-                type: 'game-ended',
-                player_name: localPlayerName,
-                majiang: paipu,
-                tenhou: logconv(paipu),
-                review_decisions: decisions,
-            };
-            if (postMortalDesktopMessage(payload) || ! remoteWebMode) return [];
-            return fetch(`${base}/mortal-api/save-paipu`, {
+        const payload = {
+            type: 'game-ended',
+            player_name: localPlayerName,
+            majiang: paipu,
+            tenhou: logconv(paipu),
+        };
+        const setStatus = text=>{
+            remotePaipuStatusText = text;
+            $('#board > .board > .summary .result-saved').text(text);
+        };
+
+        // Native packages only need the two raw logs.  Send those immediately
+        // instead of pointlessly waiting for browser-side review inference.
+        if (postMortalDesktopMessage(payload) || ! remoteWebMode) {
+            remotePaipuSavePromise = Promise.resolve([]);
+            remotePaipuReviewPromise = remotePaipuSavePromise;
+            setStatus('两份牌谱已保存');
+            return remotePaipuSavePromise;
+        }
+
+        setStatus('正在保存两份牌谱…');
+        remotePaipuSavePromise = fetch(`${base}/mortal-api/save-paipu`, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        }).then(response=>{
+            if (! response.ok) throw new Error(`服务器牌谱保存失败：${response.status}`);
+            return response.json();
+        }).then(result=>{
+            remotePaipuFiles = Array.isArray(result.files) ? result.files : [];
+            setStatus('两份牌谱已保存，Mortal评估正在后台生成');
+            return result;
+        }).catch(error=>{
+            localPaipuExported = false;
+            setStatus(`牌谱保存失败：${error.message}`);
+            console.error('服务器牌谱保存失败', error);
+            throw error;
+        });
+
+        // Review generation is deliberately chained *after* the durable raw
+        // save.  A slow advisor can no longer delay or lose the actual game.
+        remotePaipuReviewPromise = remotePaipuSavePromise.then(result=>
+            Promise.resolve(reviewReady).then(decisions=>{
+                if (! decisions.length) {
+                    setStatus('两份牌谱已保存（本局没有可评估决策）');
+                    return remotePaipuFiles;
+                }
+                return fetch(`${base}/mortal-api/save-review`, {
                     method: 'POST',
                     credentials: 'same-origin',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload),
+                    body: JSON.stringify({
+                        save_id: result.save_id,
+                        review_decisions: decisions,
+                    }),
                 }).then(response=>{
-                    if (! response.ok) throw new Error(`服务器牌谱保存失败：${response.status}`);
+                    if (! response.ok) throw new Error(`评估报告保存失败：${response.status}`);
                     return response.json();
-                }).then(result=>{
-                    remotePaipuFiles = Array.isArray(result.files) ? result.files : [];
+                }).then(review=>{
+                    const files = Array.isArray(review.files) ? review.files : [];
+                    remotePaipuFiles = [...new Set(remotePaipuFiles.concat(files))];
+                    setStatus('两份牌谱与Mortal评估报告已保存');
                     return remotePaipuFiles;
-                }).catch(error=>{
-                    console.error('服务器牌谱保存失败', error);
-                    throw error;
                 });
-        }).catch(error=>{
-            localPaipuExported = false;
-            console.error('牌谱导出失败', error);
-            throw error;
-        });
+            }).catch(error=>{
+                setStatus(`两份牌谱已保存；Mortal评估失败：${error.message}`);
+                console.error('Mortal评估报告保存失败', error);
+                return remotePaipuFiles;
+            })
+        ).catch(()=>remotePaipuFiles);
         return remotePaipuSavePromise;
     }
 
@@ -1016,7 +1060,9 @@ $(function(){
 
         localPaipuExported = false;
         remotePaipuSavePromise = null;
+        remotePaipuReviewPromise = null;
         remotePaipuFiles = [];
+        remotePaipuStatusText = '';
         localReviewJobs = [];
         localReviewEventIndex = 0;
         localReviewConvrep = converter.convrep();
@@ -1255,12 +1301,21 @@ $(function(){
             const summary = $('#board > .board > .summary').addClass('result-ready');
             if (remoteWebMode) {
                 $('.result-folder', summary).text('下载牌谱');
-                $('.result-saved', summary).text('牌谱与110万步模型评估正在保存');
+                $('.result-saved', summary).text(
+                    remotePaipuStatusText || '正在保存两份牌谱…'
+                );
             }
             else $('.result-online-review', summary).hide();
             $('.result-new-game', summary).off('click').on('click', event=>{
                 event.stopPropagation();
-                location.reload();
+                $(event.currentTarget).prop('disabled', true);
+                if (remoteWebMode && remotePaipuSavePromise) {
+                    $('.result-saved', summary).text('正在完成牌谱保存…');
+                    remotePaipuSavePromise.then(
+                        ()=>location.reload(), ()=>location.reload()
+                    );
+                }
+                else location.reload();
             });
             $('.result-replay', summary).off('click').on('click', event=>{
                 event.stopPropagation();
@@ -1278,7 +1333,7 @@ $(function(){
                 const reviewWindow = window.open('', '_blank');
                 $('.result-saved', summary).text('正在生成本地Mortal评估报告…');
                 try {
-                    if (remotePaipuSavePromise) await remotePaipuSavePromise;
+                    if (remotePaipuReviewPromise) await remotePaipuReviewPromise;
                     const report = remotePaipuFiles.find(name=>name.endsWith('_Review.json'));
                     if (! report) throw new Error('没有找到 Mortal 评估报告');
                     const data = `${base}/mortal-api/files/${encodeURIComponent(report)}`;
