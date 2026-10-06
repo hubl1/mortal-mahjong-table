@@ -945,25 +945,6 @@ $(function(){
         gameCtl._view.no_player_name = false;
         installLocalVolumeControl(gameCtl, player, player._view);
 
-        // The upstream UI only uses `beep` during the final five seconds of a
-        // timer.  Our local/remote table deliberately has no forced-discard
-        // timer, so a normal turn used to arrive silently.  Play the same,
-        // volume-controlled cue once when the human must choose a discard.
-        function playLocalTurnCue(msg) {
-            if (! localMode || ! gameCtl._pref.sound_on) return;
-            const draw = msg.zimo || msg.gangzimo;
-            const ownDraw = draw && draw.l == player._menfeng;
-            const ownCall = msg.fulou && msg.fulou.l == player._menfeng
-                          && ! msg.fulou.m.match(/^[mpsz]\d{4}/);
-            if (! ownDraw && ! ownCall) return;
-
-            const beep = player._audio?.beep;
-            if (! beep) return;
-            beep.currentTime = 0;
-            const playing = beep.play();
-            if (playing?.catch) playing.catch(()=>{});
-        }
-
         let players = [];
 
         $('#board .controller').removeClass('paipu')
@@ -1030,7 +1011,6 @@ $(function(){
                 if (msg.qipai) localReviewConvrep = converter.convrep();
                 if (seq && msg.seq != seq) location.reload();
                 const advicePromise = advisor ? advisor.observe(msg) : null;
-                playLocalTurnCue(msg);
                 player.action(msg, (reply = {})=>{
                     recordReviewDecision(msg, reply, advicePromise, reviewIndex);
                     if (advisor) advisor.dismiss();
