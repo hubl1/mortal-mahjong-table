@@ -1015,6 +1015,7 @@ $(function(){
         $('body').attr('class','board');
         fitBoard();
         let seq = 0;
+        let lastMessageSeq = 0;
 
         function recordReviewDecision(msg, reply, advicePromise, eventIndex) {
             if (! advisor || ! advicePromise || msg.jieju) return;
@@ -1071,6 +1072,11 @@ $(function(){
                 player._view.say(msg.say.name, msg.say.l);
             }
             else if (msg.seq) {
+                // Reconnects can briefly deliver the same pending request more
+                // than once.  Rendering a duplicate also plays its tile sound
+                // twice, so claim each server sequence before doing any work.
+                if (msg.seq <= lastMessageSeq) return;
+                lastMessageSeq = msg.seq;
                 const reviewIndex = ++localReviewEventIndex;
                 if (msg.qipai) localReviewConvrep = converter.convrep();
                 if (seq && msg.seq != seq) location.reload();
@@ -1110,14 +1116,25 @@ $(function(){
                     );
                     let log = msg.kaiju.log.pop();
                     localReviewEventIndex += historyCount - log.length;
-                    for (let data of log) {
-                        localReviewEventIndex++;
-                        if (data.qipai) localReviewConvrep = converter.convrep();
-                        // Rebuild the advisor's private board after a browser
-                        // refresh/reconnect, just as the visible board is
-                        // rebuilt from the server's game log below.
-                        if (advisor) advisor.observe(data);
-                        player.action(data);
+                    const viewSound = player._view.sound_on;
+                    const playerSound = player.sound_on;
+                    player._view.sound_on = false;
+                    player.sound_on = false;
+                    try {
+                        for (let data of log) {
+                            localReviewEventIndex++;
+                            if (data.qipai) localReviewConvrep = converter.convrep();
+                            // Rebuild the advisor's private board after a browser
+                            // refresh/reconnect, just as the visible board is
+                            // rebuilt from the server's game log below.  This is
+                            // state restoration, not live play, so it stays silent.
+                            if (advisor) advisor.observe(data);
+                            player.action(data);
+                        }
+                    }
+                    finally {
+                        player._view.sound_on = viewSound;
+                        player.sound_on = playerSound;
                     }
                 }
             }
