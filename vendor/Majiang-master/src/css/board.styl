@@ -184,6 +184,7 @@ html.desktop-app
         opacity: 0.80 !important
 
     #mortal-advice-button
+    #mortal-trustee-button
         position: fixed
         width: auto
         margin: 0
@@ -201,6 +202,15 @@ html.desktop-app
         &:disabled
             opacity: .38
             cursor: default
+        -webkit-tap-highlight-color: transparent
+    #mortal-advice-button
+        right: 18px
+    #mortal-trustee-button
+        right: 148px
+        &.active
+            border-color: rgba(255,213,124,.9)
+            background: rgba(126,76,8,.96)
+            color: #fff4d7
     #mortal-advice-panel
         position: fixed
         width: auto

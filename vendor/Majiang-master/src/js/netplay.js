@@ -398,6 +398,36 @@ function installAdviceUI() {
     };
 }
 
+function installTrusteeUI(onChange = ()=>{}) {
+    $('#mortal-trustee-button').remove();
+    $('body').append(
+        '<button id="mortal-trustee-button" type="button" '
+        + 'aria-pressed="false" title="临时测试功能：由电脑自动打到结算">托管到结算</button>'
+    );
+    const button = $('#mortal-trustee-button');
+    let enabled = false;
+
+    function render() {
+        button.toggleClass('active', enabled)
+              .attr('aria-pressed', String(enabled))
+              .text(enabled ? '停止托管' : '托管到结算');
+    }
+    function setEnabled(value, notify = true) {
+        value = !! value;
+        if (enabled == value) return;
+        enabled = value;
+        render();
+        if (notify) onChange(enabled);
+    }
+
+    button.on('click', ()=>setEnabled(! enabled));
+    render();
+    return {
+        get enabled() { return enabled; },
+        reset() { setEnabled(false, false); },
+    };
+}
+
 function installLocalVolumeControl(gameCtl, ...views) {
     if (! localMode) return;
     const controller = $('#board > .controller').addClass('local-volume');
@@ -1009,6 +1039,14 @@ $(function(){
             ? new LocalHumanPlayer($('#board'), pai, audio)
             : new Majiang.UI.Player($('#board'), pai, audio);
         const advisor = localMode ? new MortalAdvisor(adviceUI) : null;
+        // The temporary trustee is deliberately the bundled, lightweight
+        // computer player.  It advances test games without waiting for the
+        // remote Mortal advisor and does not change the three Mortal seats.
+        const trustee = localMode ? new Majiang.AI : null;
+        let pendingTrusteeTurn = null;
+        const trusteeUI = localMode ? installTrusteeUI(enabled=>{
+            if (enabled) requestTrusteeDecision(pendingTrusteeTurn);
+        }) : null;
         player.view  = new Majiang.UI.Board($('#board .board'), pai, audio,
                                                 player.model);
 
@@ -1024,6 +1062,45 @@ $(function(){
         fitBoard();
         let seq = 0;
         let lastMessageSeq = 0;
+
+        function requestTrusteeDecision(turn) {
+            if (! trustee || ! trusteeUI?.enabled || ! turn
+                    || turn.resolved || turn.requested) return;
+            turn.requested = true;
+            const reply = value=>{
+                turn.reply = value || {};
+                turn.ready = true;
+                setTimeout(()=>{
+                    if (! trusteeUI.enabled || turn.resolved
+                            || pendingTrusteeTurn !== turn) return;
+                    // Go through UI.Player.callback() so selectors, timers and
+                    // touch handlers are cleared exactly like a real tap.
+                    player.callback(turn.reply);
+                }, 80);
+            };
+            try {
+                // trustee.action(msg) has already updated the AI board.  Call
+                // only its decision hook here so enabling trustee in the
+                // middle of a waiting turn cannot apply the same tile twice.
+                trustee._callback = reply;
+                const msg = turn.msg;
+                if      (msg.kaiju)    trustee.action_kaiju(msg.kaiju);
+                else if (msg.qipai)    trustee.action_qipai(msg.qipai);
+                else if (msg.zimo)     trustee.action_zimo(msg.zimo, false);
+                else if (msg.gangzimo) trustee.action_zimo(msg.gangzimo, true);
+                else if (msg.dapai)    trustee.action_dapai(msg.dapai);
+                else if (msg.fulou)    trustee.action_fulou(msg.fulou);
+                else if (msg.gang)     trustee.action_gang(msg.gang);
+                else if (msg.hule)     trustee.action_hule(msg.hule);
+                else if (msg.pingju)   trustee.action_pingju(msg.pingju);
+                else if (msg.jieju)    trustee.action_jieju(msg.jieju);
+                else                   reply({});
+            }
+            catch (error) {
+                console.error('测试托管决策失败', error);
+                reply({});
+            }
+        }
 
         function recordReviewDecision(msg, reply, advicePromise, eventIndex) {
             if (! advisor || ! advicePromise || msg.jieju) return;
@@ -1089,14 +1166,30 @@ $(function(){
                 if (msg.qipai) localReviewConvrep = converter.convrep();
                 if (seq && msg.seq != seq) location.reload();
                 const advicePromise = advisor ? advisor.observe(msg) : null;
+                const trusteeTurn = {
+                    msg, seq: msg.seq, requested: false,
+                    ready: false, reply: {}, resolved: false,
+                };
+                pendingTrusteeTurn = trusteeTurn;
                 player.action(msg, (reply = {})=>{
+                    if (trusteeTurn.resolved) return;
+                    trusteeTurn.resolved = true;
+                    if (pendingTrusteeTurn === trusteeTurn) pendingTrusteeTurn = null;
                     recordReviewDecision(msg, reply, advicePromise, reviewIndex);
                     if (advisor) advisor.dismiss();
                     reply.seq = msg.seq;
                     sock.emit('GAME', reply);
                     seq = msg.seq + 1;
                 });
+                // Keep the trustee's private board synchronized even while it
+                // is off.  Its expensive choice calculation runs only after
+                // the user explicitly enables the test control.
+                if (trustee) {
+                    trustee.action(msg);
+                    requestTrusteeDecision(trusteeTurn);
+                }
                 if (msg.jieju) {
+                    trusteeUI?.reset();
                     file.add(msg.jieju, 10);
                     const reviewReady = Promise.allSettled(localReviewJobs).then(()=>{
                         localStorage.removeItem(`Mortal.review.${localRoomNo}`);
@@ -1118,6 +1211,7 @@ $(function(){
                 if (msg.qipai) localReviewConvrep = converter.convrep();
                 if (advisor) advisor.observe(msg);
                 player.action(msg);
+                if (trustee) trustee.action(msg);
                 if (msg.kaiju && msg.kaiju.log) {
                     const historyCount = msg.kaiju.log.reduce(
                         (count, round)=>count + round.length, 0
@@ -1138,6 +1232,7 @@ $(function(){
                             // state restoration, not live play, so it stays silent.
                             if (advisor) advisor.observe(data);
                             player.action(data);
+                            if (trustee) trustee.action(data);
                         }
                     }
                     finally {
