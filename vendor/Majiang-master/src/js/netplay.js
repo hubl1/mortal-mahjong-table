@@ -70,6 +70,11 @@ function requestRemotePlayerName() {
               <div class="name-error" aria-live="polite"></div>
               <button type="submit">进入牌桌</button>
               <small>该名字将显示在牌桌和保存的牌谱中</small>
+              <div class="source-offer">
+                <strong>本项目开源</strong>
+                <a href="https://github.com/hubl1/mortal-mahjong-table"
+                   target="_blank" rel="noopener noreferrer">查看源代码与许可证 →</a>
+              </div>
             </form>
           </div>`);
         const panel = $('#mortal-name-panel');
