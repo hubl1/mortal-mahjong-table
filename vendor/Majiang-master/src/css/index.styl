@@ -21,6 +21,65 @@
         // the bottom boundary.
         #board > .board .shoupai.main
             transform: translate(78px, 390px)
+
+// A true 16:10 layout.  The landscape rules above are 800 x 450 (16:9), so
+// simply centering them on a 16:10 display wastes a band at the top.  Keep all
+// tiles at their original proportions and distribute the extra 50 logical
+// pixels through the vertical positions instead.
+html.desktop-app.landscape-16x10
+    #board
+        height: 500px
+    #board > .board
+        height: 500px
+        .score
+            transform: translate(240px, 183px)
+        .timer
+            transform: translate(78px, 422px)
+        .player-button
+            transform: translate(78px, 387px)
+        .select-mianzi
+            transform: translate(78px, 396px)
+        > .player
+            &.main
+                transform: translate(164px, 391px)
+            &.xiajia
+                transform: translate(499px, 328px)
+            &.duimian
+                transform: translate(460px, 56px)
+            &.shangjia
+                transform: translate(125px, 119px)
+        .he
+            &.main
+                transform: translate(305px, 294px)
+            &.xiajia
+                transform: translate(520px, 322px) rotate(270deg)
+            &.duimian
+                transform: translate(455px, 183px) rotate(180deg)
+            &.shangjia
+                transform: translate(240px, 156px) rotate(90deg)
+        .shoupai
+            &.main
+                transform: translate(78px, 440px)
+            &.xiajia
+                transform: translate(652px, 474px) rotate(270deg)
+            &.duimian
+                transform: translate(625px, 55px) rotate(180deg)
+            &.shangjia
+                transform: translate(108px, 26px) rotate(90deg)
+        .say
+            &.main
+                transform: translate(280px, 328px)
+            &.xiajia
+                transform: translate(520px, 183px)
+            &.duimian
+                transform: translate(280px, 39px)
+            &.shangjia
+                transform: translate(40px, 183px)
+        .hule-dialog
+        > .summary
+        .kaiju
+        .suspend
+            height: 500px
 @media screen and (max-height: 450px)
     @import "tablet"
 @import "file"

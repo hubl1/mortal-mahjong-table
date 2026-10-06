@@ -707,7 +707,15 @@ function fitBoard() {
             document.body.style.width = `${width}px`;
             document.body.style.height = `${height}px`;
         }
-        const baseHeight = width / height >= 1.5 ? 450 : 680;
+        const aspect = width / height;
+        // The compact table was originally laid out for 16:9.  On the many
+        // 16:10 tablets/laptops in use that leaves a conspicuous strip above
+        // the table because the local hand is intentionally pinned below.
+        // Give those viewports their own 800 x 500 canvas instead of either
+        // stretching the tiles or cropping the left/right edges.
+        const landscape16x10 = aspect >= 1.55 && aspect <= 1.70;
+        document.documentElement.classList.toggle('landscape-16x10', landscape16x10);
+        const baseHeight = landscape16x10 ? 500 : (aspect >= 1.5 ? 450 : 680);
         const ratio = Math.min(width / 800, height / baseHeight);
 
         // A freely resized Windows window does not always preserve Electron's
