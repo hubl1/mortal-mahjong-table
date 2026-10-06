@@ -78,6 +78,13 @@ html.desktop-app
         &:fullscreen #tablet-fullscreen
             display: none
 
+    &.touch-web
+        #board > .board
+            .player-button .button
+            .select-mianzi .mianzi
+                touch-action: none
+                -webkit-tap-highlight-color: transparent
+
     #mortal-name-panel
         position: fixed
         z-index: 200

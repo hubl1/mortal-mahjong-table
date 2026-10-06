@@ -23,8 +23,11 @@ const localRule = localParams.get('rule') || 'Mリーグルール';
 const localPlatform = localParams.get('platform') || '';
 const remoteWebMode = localMode && localParams.get('renderer') == 'web';
 const windowsDesktop = localMode && localPlatform == 'windows';
-const tabletWebMode = remoteWebMode
-                   && window.matchMedia?.('(pointer: coarse)').matches;
+const touchWebMode = remoteWebMode
+                  && window.matchMedia?.('(pointer: coarse)').matches;
+const tabletWebMode = touchWebMode
+                   && navigator.maxTouchPoints > 0
+                   && Math.min(screen.width, screen.height) >= 600;
 if (localMode) {
     // The native macOS table intentionally has its own compact landscape UI.
     // Android uses mortal-android.js and keeps the phone-specific layout.
@@ -37,6 +40,9 @@ if (localMode) {
     }
     if (tabletWebMode) {
         document.documentElement.classList.add('tablet-web');
+    }
+    if (touchWebMode) {
+        document.documentElement.classList.add('touch-web');
     }
 }
 
@@ -130,6 +136,23 @@ function installTabletFullscreen() {
 }
 
 class LocalHumanPlayer extends Majiang.UI.Player {
+    bind_touch_action(list) {
+        if (! touchWebMode) return;
+        list.off('.mortal-touch').on('touchend.mortal-touch', event=>{
+            // A synthetic click on Android can be lost when focus changes or
+            // can bubble to the board-wide "skip" handler.  Resolve the touch
+            // directly on the intended control and suppress that later click.
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            $(event.currentTarget).triggerHandler('click');
+        });
+    }
+
+    clear_button() {
+        $('.button', this._node.button).off('.mortal-touch');
+        super.clear_button();
+    }
+
     // The upstream selector automatically focuses the last legal tile/action.
     // WKWebView responds by panning its visual viewport to keep that element in
     // view.  Build the same selectors without an initial focus, so the layout
@@ -167,7 +190,14 @@ class LocalHumanPlayer extends Majiang.UI.Player {
         show(this._node.button.width($(this._node.dapai).width()));
         setSelector($('.button[tabindex]', this._node.button),
                     'button', { focus: null, touch: false });
+        this.bind_touch_action($('.button[tabindex]', this._node.button));
         pinLocalViewport();
+    }
+
+    select_mianzi(mianzi) {
+        const result = super.select_mianzi(mianzi);
+        this.bind_touch_action($('.mianzi', this._node.mianzi));
+        return result;
     }
 }
 
@@ -967,7 +997,9 @@ $(function(){
         // Use the original player interaction. The local selector already
         // prevents focus scrolling, so hover can lift tiles without panning
         // the WKWebView.
-        const player = new Majiang.UI.Player($('#board'), pai, audio);
+        const player = touchWebMode
+            ? new LocalHumanPlayer($('#board'), pai, audio)
+            : new Majiang.UI.Player($('#board'), pai, audio);
         const advisor = localMode ? new MortalAdvisor(adviceUI) : null;
         player.view  = new Majiang.UI.Board($('#board .board'), pai, audio,
                                                 player.model);
