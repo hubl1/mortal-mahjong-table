@@ -1,0 +1,691 @@
+body.board
+    color: white
+    background: black
+    margin: 0
+    > *
+        width: 800px
+        margin: 0 auto
+    #board
+        display: block
+    > .version
+        display: block
+        font-size: 16px
+        font-family: defen-font
+        text-align: right
+
+html.local-app
+    width: 100%
+    height: 100%
+    overflow: hidden
+    background: #154
+    body.board
+        position: fixed
+        inset: 0
+        margin: 0
+        width: 100vw
+        height: 100vh
+        overflow: hidden
+        background: #154
+        display: flex
+        align-items: center
+        justify-content: center
+        #navi, > .version
+            display: none
+        #board
+            flex: none
+            contain: layout style
+            .say
+                transition-duration: 0.12s
+            .hule-dialog, > .summary
+                transition-duration: 0.12s
+            .pai
+                image-rendering: -webkit-optimize-contrast
+                &.blink
+                    animation: none
+                    filter: brightness(1.18)
+                &.deleted
+                    transition-duration: 0.12s
+                    transition-delay: 0s
+
+// Chromium otherwise smooths the large source tile textures twice: once when
+// shrinking each image and again when the 800px board is zoomed to the window.
+// Keep this Electron-only so the native WKWebView renderer remains unchanged.
+html.electron-app
+    .pai
+        image-rendering: pixelated !important
+
+html.desktop-app
+    #mortal-name-panel
+        position: fixed
+        z-index: 200
+        inset: 0
+        width: auto
+        margin: 0
+        display: flex
+        align-items: center
+        justify-content: center
+        background: #123f34
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
+        .name-card
+            width: 380px
+            max-width: calc(100vw - 40px)
+            box-sizing: border-box
+            padding: 32px
+            border: 1px solid rgba(255,255,255,.28)
+            border-radius: 16px
+            background: #073a33
+            color: #fff
+            box-shadow: 0 18px 60px rgba(0,0,0,.35)
+        h1
+            margin: 0 0 8px
+            font-size: 30px
+        p
+            margin: 0 0 20px
+            color: rgba(255,255,255,.72)
+            font-size: 17px
+        input
+            display: block
+            width: 100%
+            box-sizing: border-box
+            padding: 12px 14px
+            border: 1px solid rgba(255,255,255,.4)
+            border-radius: 8px
+            outline: none
+            background: rgba(255,255,255,.96)
+            color: #123f34
+            font-size: 18px
+            &:focus
+                border-color: #43d7c4
+                box-shadow: 0 0 0 3px rgba(67,215,196,.22)
+        button
+            display: block
+            width: 100%
+            margin-top: 8px
+            padding: 12px
+            border: 1px solid rgba(255,255,255,.45)
+            border-radius: 8px
+            background: #0c7164
+            color: #fff
+            font-size: 17px
+            font-weight: 700
+            cursor: pointer
+        small
+            display: block
+            margin-top: 14px
+            color: rgba(255,255,255,.55)
+            line-height: 1.45
+        .name-error
+            min-height: 20px
+            padding: 5px 2px 0
+            color: #ffb5ae
+            font-size: 13px
+
+    // 天凤式摸切提示：牌河中的摸切牌始终明显半透明。
+    // 也覆盖刚打出牌的临时 dapai 样式，避免下一巡透明度跳变。
+    #board > .board .he .dapai .pai.mopai
+        opacity: 0.80 !important
+
+    #mortal-advice-button
+        position: fixed
+        width: auto
+        margin: 0
+        z-index: 80
+        right: 18px
+        top: 18px
+        border: 1px solid rgba(255,255,255,.5)
+        border-radius: 8px
+        padding: 9px 14px
+        color: #fff
+        background: rgba(3,42,36,.92)
+        font: 600 15px/1.2 sans-serif
+        box-shadow: 0 3px 14px rgba(0,0,0,.28)
+        cursor: pointer
+        &:disabled
+            opacity: .38
+            cursor: default
+    #mortal-advice-panel
+        position: fixed
+        width: auto
+        margin: 0
+        z-index: 100
+        inset: 0
+        display: flex
+        align-items: center
+        justify-content: center
+        background: rgba(0,22,19,.48)
+        font-family: sans-serif
+        &.hide
+            display: none
+        .advice-card
+            width: 540px
+            max-width: calc(100vw - 48px)
+            max-height: calc(100vh - 48px)
+            color: #d8ebe7
+            background: #064c55
+            border: 1px solid rgba(255,255,255,.38)
+            border-radius: 12px
+            box-shadow: 0 16px 48px rgba(0,0,0,.48)
+            overflow: hidden
+        .advice-title
+            display: flex
+            align-items: center
+            justify-content: space-between
+            padding: 11px 14px
+            font-size: 20px
+            font-weight: 700
+            border-bottom: 1px solid rgba(255,255,255,.22)
+        .advice-close
+            width: 34px
+            height: 34px
+            border: 0
+            border-radius: 50%
+            color: #d8ebe7
+            background: rgba(0,0,0,.25)
+            font-size: 24px
+            line-height: 30px
+            cursor: pointer
+        .advice-best
+            display: flex
+            align-items: center
+            gap: 8px
+            padding: 10px 14px
+            background: rgba(0,0,0,.16)
+            .pai
+                width: 30px
+                height: 40px
+                object-fit: fill
+                image-rendering: -webkit-optimize-contrast
+            .label
+                color: #9fc8c2
+                font-size: 14px
+            .action
+                font-size: 19px
+                font-weight: 700
+        .advice-list
+            max-height: calc(100vh - 190px)
+            overflow: auto
+            padding: 6px 14px 12px
+        .advice-empty
+            padding: 18px 0 10px
+            color: #b9d4cf
+            font-size: 14px
+            line-height: 1.6
+        .advice-head, .advice-row
+            display: grid
+            grid-template-columns: 82px 58px 74px minmax(166px,1fr)
+            align-items: center
+            min-height: 42px
+            border-bottom: 1px solid rgba(255,255,255,.13)
+        .advice-head
+            min-height: 32px
+            color: #9fc8c2
+            font-size: 13px
+        .advice-row.recommended
+            color: #fff
+            font-weight: 700
+            background: rgba(75,190,92,.13)
+        .advice-action
+            display: flex
+            align-items: center
+            gap: 5px
+            .pai
+                width: 27px
+                height: 36px
+                object-fit: fill
+                image-rendering: -webkit-optimize-contrast
+        .advice-number
+            text-align: right
+            font-variant-numeric: tabular-nums
+        .advice-risk-heading
+            padding-left: 12px
+            text-align: left
+        .advice-risk
+            display: flex
+            flex-direction: column
+            gap: 3px
+            padding: 5px 0 5px 12px
+        .advice-risk-lane
+            display: grid
+            grid-template-columns: 18px minmax(58px,1fr) 42px
+            align-items: center
+            gap: 5px
+            min-height: 14px
+        .advice-risk-seat
+            font-size: 11px
+            font-weight: 700
+            text-align: center
+            &.shimo
+                color: #d98f8f
+            &.toimen
+                color: #86cccc
+            &.kami
+                color: #b98ada
+        .advice-risk-track
+            position: relative
+            height: 7px
+            overflow: hidden
+            border-radius: 5px
+            background: rgba(0,0,0,.30)
+        .advice-risk-fill
+            display: block
+            height: 100%
+            min-width: 1px
+            border-radius: inherit
+            &.shimo
+                background: #b85f5f
+            &.toimen
+                background: #55a5a5
+            &.kami
+                background: #8e5ab4
+        .advice-risk-value
+            font-size: 11px
+            font-weight: 400
+            text-align: right
+            font-variant-numeric: tabular-nums
+        .advice-risk-empty
+            padding-left: 12px
+            color: rgba(216,235,231,.45)
+            text-align: center
+        .advice-risk-note
+            padding: 10px 0 2px
+            color: #9fc8c2
+            font-size: 12px
+            line-height: 1.45
+
+        @media (max-width: 620px)
+            .advice-card
+                max-width: calc(100vw - 20px)
+            .advice-list
+                padding-left: 10px
+                padding-right: 10px
+            .advice-head, .advice-row
+                grid-template-columns: 72px 50px 62px minmax(120px,1fr)
+            .advice-risk
+                padding-left: 8px
+            .advice-risk-heading, .advice-risk-empty
+                padding-left: 8px
+            .advice-risk-lane
+                grid-template-columns: 16px minmax(38px,1fr) 38px
+                gap: 3px
+
+html.desktop-app
+    #board > .controller.local-volume
+        z-index: 40
+        pointer-events: auto
+        .sound, .minus, .plus, .speed span
+            pointer-events: auto
+            cursor: pointer
+        .speed span
+            visibility: visible !important
+            opacity: .10
+            transition: opacity .12s
+            &.active
+                opacity: .55
+        &:hover .speed span
+            opacity: .16
+            &.active
+                opacity: .78
+#space
+    display: none
+
+#board
+    display: none
+#board > .board
+    position: absolute
+    width: 800px
+    overflow: hidden
+    user-select: none
+    touch-action: manipulation
+    margin: 0 auto
+    background: #154
+    > *
+        position: absolute
+        transform-origin: 0% 0%
+    .score
+        border-radius: 4px
+        background: #111
+        font-family: defen-font
+        .juchang
+            float: left
+            .jushu
+                font-family: title-font
+                font-size: 32px
+                line-height: 1.2
+        .shan
+            float: right
+            text-align: right
+        .defen
+            clear: both
+            div
+                position: absolute
+                &.lunban
+                    color: #0ff
+                &.main
+                    text-align: center
+                &.xiajia
+                    text-align: right
+                &.duimian
+                    text-align: center
+                &.shangjia
+                    text-align: left
+    .timer
+        color: white
+        font-size: 16px
+        font-family: defen-font
+        text-align: right
+        text-shadow: 2px 2px 4px black
+    .player-button
+        z-index: 1
+        text-align: right
+        white-space: nowrap
+        display: flex
+        justify-content: end
+        .button
+            cursor: pointer
+            display: inline-block
+            text-align: center
+            font-family: menu-font
+            color: white
+            background: black;
+            border-radius: 4px;
+            &:focus
+                background: #999
+                outline: none
+    .select-mianzi
+        z-index: 1
+        line-height: 1
+        text-align: right
+        white-space: nowrap
+        .mianzi
+            background: black
+            border-radius: 4px
+            cursor: pointer
+            opacity: 0.8
+            &:focus
+                outline: none
+                opacity: 1.0
+    > .player
+        background: black
+        font-family: text-font
+        opacity: 0.5
+        white-space: nowrap
+        overflow: hidden
+        text-overflow: ellipsis
+        &.disconnect
+            opacity: 0.1
+        &.selectable
+            cursor: pointer
+            &:hover
+                opacity: 1
+    .say
+        font-family: text-font
+        color: white
+        text-shadow: 3px  3px 6px #333,
+                    -3px  3px 6px #333,
+                    -3px -3px 6px #333,
+                     3px -3px 6px #333
+        transition: opacity 0.4s ease-out
+        &.main
+            text-align: center
+        &.xiajia
+            text-align: left
+        &.duimian
+            text-align: center
+        &.shangjia
+            text-align: right
+    .hule-dialog
+        display: flex
+        overflow: auto
+        align-items: center
+        transition: opacity 0.2s ease-in
+        &:focus
+            outline: none
+        > div
+            margin: auto 0
+            > div
+                display: table
+                background: rgba(0,0,0,0.8)
+                margin: auto
+                .hule
+                    .shan
+                        font-family: title-font
+                        img
+                            vertical-align: bottom
+                        &.baopai
+                            float: left
+                        &.fubaopai
+                            float: right
+                    .shoupai
+                        clear: both
+                    .hupai
+                        font-family: title-font
+                        line-height: 1
+                        .fanshu
+                            text-align: right
+                        .defen
+                            text-align: right
+                    .jicun
+                        text-align: center
+                        font-family: defen-font
+                .pingju
+                    font-family: title-font
+                    text-align: center
+                .fenpei
+                    font-family: defen-font
+                    > *
+                        position: absolute
+                        transform-origin: 0% 0%
+                        display: inline-block
+                        .player
+                            display: none
+                        .defen
+                            display: inline-block
+                            float: right
+                            text-align: right
+                        .diff
+                            display: inline-block
+                            float: right
+                            text-align: right
+                        .plus
+                            color: #0ff
+                        .minus
+                            color: #f00
+    > .summary
+        z-index: 1
+        display: flex
+        overflow: auto
+        align-items: center
+        transition: opacity 0.2s ease-out
+        &:focus
+            outline: none
+        > div
+            margin: auto 0
+            > div
+                background: rgba(0,0,0,0.8)
+                margin: auto
+                table
+                    margin: auto
+                    font-family: text-font
+                    border-collapse: collapse
+                    line-height: 1.5
+                    .r_player
+                        border-bottom: solid 2px
+                    .r_diff
+                        .back
+                            text-align: right
+                        .zhuangjia
+                            background: rgba(128,128,128,0.4)
+                        .diff
+                            font-family: defen-font
+                        .lizhi
+                            font-family: defen-font
+                            display: inline-block
+                            width: 1.2em
+                            text-align: center
+                    .r_defen
+                        border-top: solid 2px
+                        .defen
+                            font-family: defen-font
+                            text-align: right
+                            padding-right: 1.2em
+                    .r_point
+                        border-top: solid 1px
+                        .point
+                            font-family: defen-font
+                            text-align: center
+                    .baojia
+                    .minus
+                        color: red
+                    .hule
+                    .plus
+                        color: #0ff
+                    a.download
+                        opacity: 0.6
+                        font-family: menu-font
+                        font-size: 18px
+                        text-decoration: none
+                        color: white
+                        &::link
+                            color: white
+                        img
+                            height: 1em
+                            vertical-align: text-bottom
+    > .summary.paipu tbody tr:hover
+        background: rgba(256,256,256,0.4)
+        cursor: pointer
+    .kaiju
+        &:focus
+            outline: none
+    .kaiju > div
+        z-index: 1
+        margin-top: 120px
+        position: relative
+        width: 580px
+        margin: auto
+        background: #111
+        border: solid 1px #111
+        border-radius: 6px
+        .title
+            margin: 40px 20px
+            text-align: center
+            font-family: title-font
+            font-size: 32px
+            line-height: 1
+        .player
+            margin: 40px 20px
+            height: 132px
+            text-align: center
+            font-family: text-font
+            font-size: 24px
+            > div
+                position: absolute
+                width: 240px
+                height: 38px
+                padding: 0px 10px
+                border-radius: 4px
+                background: #333
+                white-space: nowrap
+                overflow: hidden
+                text-overflow: ellipsis
+                &.selectable
+                    cursor: pointer
+                    &:hover
+                        background: #999
+                &.main
+                    transform: translate(140px, 96px)
+                &.xiajia
+                    transform: translate(280px, 48px)
+                &.duimian
+                    transform: translate(140px, 0px)
+                &.shangjia
+                    transform: translate(0px, 48px)
+    .suspend
+        background: rgba(0, 0, 0, 0.5);
+
+#board
+    .controller
+        position: absolute
+        img
+            display: none
+            opacity: 0.2
+            cursor: pointer
+            &.sound
+                display: inline
+        &.paipu
+            img
+                display: inline
+        .speed
+            img
+                display: inline
+            span
+                display: inline-block
+                background: white
+                opacity: 0.1
+        &:hover
+            border-color: #333
+            background: black
+            img
+                opacity: 0.5
+                &:hover
+                    opacity: 1
+            span
+                opacity: 0.2
+    .download
+        position: absolute
+        z-index: 1
+        a
+            opacity: 0.7
+            display: inline-block
+            color: white
+            background: black
+            text-decoration: none
+            font-size: 18px
+            font-family: menu-font
+            padding: 6px 10px
+            border-radius: 6px
+            cursor: pointer
+            img
+                height: 1.2em
+                margin-right: 0.5em
+                vertical-align: middle
+            &:hover
+                opacity: 1
+    .tenhou-dialog
+        position: absolute
+        z-index: 1
+        background: rgba(0, 0, 0, 0.5);
+        form
+            padding: 15px
+            background: white
+            border-radius: 4px
+            font-family: menu-font
+            font-size: 14px
+            color: black
+            li
+                display: inline-block
+                margin-right: 0.5em
+            textarea
+                box-sizing: border-box
+                width: 100%
+                resize: none
+                &.URL
+                    white-space: pre
+                &.JSON
+                    word-break: break-all
+            .button
+                text-align: right
+
+@media screen and (max-height: 680px)
+    body.board
+        height: 100dvh
+        #space
+            display: block
+            background: #666
+            height: 100px
+        #navi, > .version
+            display: none
+
+@media screen and (max-width: 800px)
+    body.board
+        > .version
+            display: none

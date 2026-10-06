@@ -1,0 +1,80 @@
+# Operating-system and editor files
+.DS_Store
+**/.DS_Store
+# This machine's global Git config ignores PNG files; the app's tile and icon
+# assets are source material and must stay in the public repository.
+!*.png
+!Cargo.lock
+!/android/gradle/wrapper/gradle-wrapper.jar
+.idea/
+.vscode/
+*.swp
+
+# Secrets and machine-specific configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+/web-deploy/frpc-web.ini
+
+# Python, Rust, Node and Swift build state
+.venv/
+.venv*/
+**/__pycache__/
+*.py[cod]
+**/target/
+**/.build/
+**/node_modules/
+/electron-app/dist/
+/packaging/cache/
+/packaging/runtime/
+/packaging/work/
+/android/toolchain/
+/android/build/
+/android/.gradle-home/
+
+# Compiled native extensions; their AGPL source is under android/native/upstream
+*.so
+*.pyd
+*.dll
+*.dylib
+
+# Model weights and converted inference artifacts are distributed separately
+/models/*
+!/models/README.md
+*.pth
+*.pt
+*.onnx
+*.ort
+/android/model/
+
+# Generated web bundles. Static image/audio source assets remain tracked.
+/vendor/Majiang-master/dist/*.html
+/vendor/Majiang-master/dist/css/
+/vendor/Majiang-master/dist/js/
+/vendor/Majiang-master/dist/mortal-reviewer/
+/vendor/Majiang-master/dist/img/skin-flat/
+/vendor/Majiang-master/dist/img/skin-trainer2d/
+/vendor/Majiang-master/dist/img/skin-unity/
+
+# Runtime state, saved games and distributable packages
+/logs/
+/paipu/
+/runtime/*.pid
+/comparisons/
+/backups/
+/releases/
+/Mortal麻将.app/
+
+# Private research/evaluation material that is not part of the shipped app
+/cluster-eval/
+/pipeline-v2/
+/obsidian-export/
+/tools/*.slurm
+/tools/scan-*.py
+/tools/capture-killer-differences.js
+/tools/build-obsidian-screenshot-index.js
+/tools/compare-majiang-mortal.js

@@ -1,0 +1,110 @@
+#!/usr/bin/env node
+
+"use strict";
+
+const net = require('net');
+const readline = require('readline');
+
+const mjsonpURL = process.argv[2] || '';
+const match = mjsonpURL.match(/^mjsonp:\/\/(.+):(\d+)\/([^/]+)/);
+if (! match) {
+    console.error(`Bad mjsonp URL: ${mjsonpURL}`);
+    process.exit(2);
+}
+
+const host = match[1];
+const port = Number(match[2]);
+const room = match[3];
+let poolPort;
+for (let i = 3; i < process.argv.length; i++) {
+    if (process.argv[i] === '--pool-port') poolPort = Number(process.argv[++i]);
+}
+if (! Number.isInteger(poolPort)) {
+    console.error('Missing --pool-port');
+    process.exit(2);
+}
+
+let gameSocket;
+let poolSocket;
+let playerID;
+let lastPai;
+let scores = [25000, 25000, 25000, 25000];
+const pending = [];
+
+function reply(response) {
+    gameSocket.write(JSON.stringify(response) + '\n');
+}
+
+function connectGame() {
+    gameSocket = net.connect(port, host, () => {
+        readline.createInterface(gameSocket).on('line', handleGameLine);
+    });
+    gameSocket.on('error', fail);
+    gameSocket.on('close', () => process.exit(0));
+}
+
+function handleGameLine(line) {
+    const request = JSON.parse(line);
+    if (request.type === 'hello') {
+        reply({ type: 'join', name: 'Mortal', room });
+        return;
+    }
+    if (request.type === 'start_game') playerID = request.id;
+    if (request.type === 'start_kyoku' && ! request.scores) {
+        request.scores = scores;
+    }
+    if (request.type === 'error') {
+        fail(new Error(request.message));
+        return;
+    }
+    if (request.scores) scores = request.scores;
+    if (request.pai) lastPai = request.pai;
+
+    pending.push(request);
+    poolSocket.write(JSON.stringify([request]) + '\n');
+}
+
+function handlePoolLine(line) {
+    const request = pending.shift();
+    const response = JSON.parse(line);
+    if (response.type === 'hora') response.pai = lastPai;
+    else if (response.type === 'ryukyoku') {
+        response.actor = playerID;
+        response.reason = 'kyushukyuhai';
+    }
+    delete response.meta;
+    reply(response);
+
+    if (request?.type === 'end_game') {
+        gameSocket.end();
+        poolSocket.end();
+    }
+}
+
+function connectPool(attempt = 0) {
+    poolSocket = net.connect(poolPort, '127.0.0.1', () => {
+        readline.createInterface(poolSocket).on('line', handlePoolLine);
+        connectGame();
+    });
+    poolSocket.on('error', (error) => {
+        poolSocket.destroy();
+        // Importing the bundled CPU build of PyTorch can take well over five
+        // seconds on Windows.  Keep retrying long enough for slower PCs and
+        // cold antivirus/file-system caches instead of silently losing every
+        // Mortal seat during startup.
+        if (attempt < 900 && error.code === 'ECONNREFUSED') {
+            setTimeout(() => connectPool(attempt + 1), 100);
+        }
+        else fail(error);
+    });
+    poolSocket.on('close', () => {
+        if (gameSocket && ! gameSocket.destroyed) gameSocket.destroy();
+    });
+}
+
+function fail(error) {
+    console.error(error?.stack || String(error));
+    process.exit(1);
+}
+
+connectPool();

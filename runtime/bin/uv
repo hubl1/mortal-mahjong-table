@@ -1,0 +1,15 @@
+#!/bin/sh
+
+# mortal-wrapper normally launches Akagi through `uv run python bot.py`.
+# Keep that interface, but use this project's pinned Python environment so
+# starting a local game never downloads packages or switches interpreters.
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+PROJECT_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)
+
+if [ "$1" = "run" ] && [ "$2" = "python" ]; then
+    shift 2
+    exec "$PROJECT_DIR/.venv311/bin/python" "$@"
+fi
+
+echo "This local uv shim only supports: uv run python ..." >&2
+exit 2

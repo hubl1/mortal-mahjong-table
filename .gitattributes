@@ -1,0 +1,10 @@
+* text=auto
+*.command text eol=lf
+*.sh text eol=lf
+*.service text eol=lf
+*.png binary
+*.gif binary
+*.ico binary
+*.wav binary
+*.mp3 binary
+*.gz binary

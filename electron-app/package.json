@@ -1,0 +1,56 @@
+{
+  "name": "mortal-mahjong-desktop",
+  "version": "0.4.2",
+  "private": true,
+  "description": "完全离线的 Mortal 四人日麻桌面应用",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "pack:mac": "electron-builder --mac --arm64 --dir",
+    "dist:mac": "electron-builder --mac zip --arm64",
+    "pack:win": "electron-builder --win --x64 --dir",
+    "dist:win": "electron-builder --win zip --x64"
+  },
+  "devDependencies": {
+    "electron": "^39.2.7",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "org.mortalmahjong.desktop",
+    "productName": "Mortal麻将",
+    "asar": true,
+    "directories": { "output": "dist" },
+    "files": ["main.js", "preload.js", "status.html", "package.json"],
+    "extraResources": [
+      { "from": "../vendor/Majiang-master/dist", "to": "game" },
+      { "from": "../runtime/node_modules", "to": "server/node_modules" },
+      { "from": "../runtime/bin/mortal-pool-client", "to": "shared/mortal-pool-client.js" },
+      { "from": "../models/mortal-finetune-ours560-step-1100000.pth", "to": "models/mortal.pth" },
+      {
+        "from": "../vendor/Akagi-MjaiBot-Mortal-main",
+        "to": "bot",
+        "filter": ["*.py", "ot_settings.json", "libriichi/**", "LICENSE"]
+      },
+      { "from": "../packaging/legal", "to": "legal" }
+    ],
+    "mac": {
+      "category": "public.app-category.utilities",
+      "icon": "../assets/MortalMahjong-AppIcon.png",
+      "target": ["zip"],
+      "artifactName": "Mortal麻将-${version}-mac-${arch}.${ext}",
+      "identity": null,
+      "extraResources": [
+        { "from": "../packaging/runtime/macos-arm64/mortal-engine", "to": "engine" }
+      ]
+    },
+    "win": {
+      "target": ["zip"],
+      "icon": "../assets/MortalMahjong-AppIcon.png",
+      "artifactName": "Mortal麻将-${version}-windows-${arch}.${ext}",
+      "signExecutable": false,
+      "extraResources": [
+        { "from": "../packaging/runtime/windows-x64/python", "to": "engine/python" }
+      ]
+    }
+  }
+}

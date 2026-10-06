@@ -1,0 +1,201 @@
+@charset "UTF-8"
+@import "font"
+@import "base"
+@import "pai"
+@import "shoupai"
+@import "he"
+@import "navi"
+@import "title"
+@import "board"
+@import "desktop"
+// The native macOS app keeps the classic near-square desktop table in a
+// window, then switches to the compact landscape table in full screen. The
+// Android entry point never adds .desktop-app and remains independent.
+@media screen and (min-aspect-ratio: 3/2)
+    html.desktop-app
+        body.board
+            align-items: flex-end
+        @import "tablet"
+        // Preserve the standard selector/hover behavior in full screen and
+        // only move the local hand down far enough for the tile faces to meet
+        // the bottom boundary.
+        #board > .board .shoupai.main
+            transform: translate(78px, 390px)
+@media screen and (max-height: 450px)
+    @import "tablet"
+@import "file"
+@import "stat"
+@import "editor"
+@import "analyzer"
+@import "room"
+@import "rule"
+@import "demo"
+
+// Windows displays are commonly lower resolution than the Retina Macs used
+// for the native build.  Let Chromium resample the 2D tile art smoothly on
+// Windows while preserving the deliberate point-to-point pixel texture on Mac.
+html.windows-app.electron-app
+    .pai
+        image-rendering: auto !important
+
+// Local desktop result screen.  This replaces the upstream small Japanese
+// per-hand ledger after a live game, without changing the replay/analyzer UI.
+html.desktop-app
+    #board > .board > .summary.mortal-summary
+        overflow: hidden
+        background: rgba(6, 54, 45, .96)
+        > div
+            width: 100%
+            min-height: 100%
+            margin: 0
+            padding: 0
+            display: flex
+            align-items: center
+            justify-content: center
+            > div
+                width: auto
+                min-width: 0
+                margin: 0
+                padding: 0
+                background: transparent
+        .mortal-result
+            box-sizing: border-box
+            width: 620px
+            max-height: calc(100% - 34px)
+            padding: 22px 24px 16px
+            overflow: auto
+            color: #eaf5f2
+            background: rgba(4, 39, 33, .96)
+            border: 1px solid rgba(255, 255, 255, .2)
+            border-radius: 16px
+            box-shadow: 0 18px 54px rgba(0, 0, 0, .34)
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
+        .result-header
+            text-align: center
+            margin-bottom: 16px
+            .result-kicker
+                color: #9fc9bf
+                font-size: 13px
+                font-weight: 700
+                letter-spacing: .28em
+            h1
+                margin: 3px 0 1px
+                color: #fff
+                font-size: 38px
+                line-height: 1.08
+                letter-spacing: .06em
+            .result-local-score
+                color: #d6e9e4
+                font-size: 17px
+                font-variant-numeric: tabular-nums
+                span
+                    margin-left: 8px
+                    color: #61e4d4
+                    font-weight: 700
+        .result-standings
+            display: grid
+            gap: 7px
+        .result-row
+            display: grid
+            grid-template-columns: 42px minmax(0, 1fr) 122px 76px
+            align-items: center
+            min-height: 48px
+            padding: 0 14px 0 8px
+            background: rgba(255, 255, 255, .055)
+            border: 1px solid rgba(255, 255, 255, .08)
+            border-radius: 10px
+            font-variant-numeric: tabular-nums
+            &.rank-1
+                border-color: rgba(244, 192, 65, .46)
+                background: linear-gradient(90deg, rgba(244,192,65,.17), rgba(255,255,255,.055))
+                .result-rank
+                    color: #f4c041
+            &.local-player
+                box-shadow: inset 3px 0 #37d7c2
+        .result-rank
+            text-align: center
+            color: #aac8c1
+            font-size: 25px
+            font-weight: 800
+        .result-player
+            overflow: hidden
+            white-space: nowrap
+            text-overflow: ellipsis
+            font-size: 17px
+            strong
+                font-weight: 700
+            small
+                display: inline-block
+                margin-left: 7px
+                padding: 2px 7px
+                color: #062f28
+                background: #59d9c8
+                border-radius: 999px
+                font-size: 11px
+                font-weight: 800
+        .result-score
+            text-align: right
+            font-size: 18px
+            strong
+                font-weight: 750
+            small
+                margin-left: 3px
+                color: #9fc0b8
+                font-size: 11px
+        .result-point
+            text-align: right
+            font-size: 17px
+            font-weight: 750
+            &.positive
+                color: #61e4d4
+            &.negative
+                color: #ff8585
+        .result-actions
+            display: flex
+            justify-content: center
+            gap: 9px
+            margin-top: 15px
+            button
+                padding: 8px 15px
+                color: #dceeea
+                background: rgba(255,255,255,.08)
+                border: 1px solid rgba(255,255,255,.22)
+                border-radius: 8px
+                font: 650 14px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
+                cursor: pointer
+                opacity: .48
+                pointer-events: none
+                &.result-new-game
+                    color: #062f28
+                    background: #59d9c8
+                    border-color: #59d9c8
+        &.result-ready .result-actions button
+            opacity: 1
+            pointer-events: auto
+            &:hover
+                filter: brightness(1.1)
+        .result-saved
+            margin-top: 10px
+            color: #8fb6ad
+            text-align: center
+            font-size: 12px
+
+@media screen and (min-aspect-ratio: 3/2)
+    html.desktop-app
+        #board > .board > .summary.mortal-summary
+            .mortal-result
+                width: 590px
+                max-height: calc(100% - 20px)
+                padding: 12px 20px 10px
+            .result-header
+                margin-bottom: 9px
+                h1
+                    font-size: 29px
+                .result-local-score
+                    font-size: 15px
+            .result-row
+                min-height: 40px
+            .result-actions
+                margin-top: 10px
+            .result-saved
+                margin-top: 6px

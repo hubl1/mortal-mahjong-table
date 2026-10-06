@@ -1,0 +1,13 @@
+{
+  "name": "local-mortal-table-runtime",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Local Majiang server and MJAI bridge for playing against Mortal",
+  "scripts": {
+    "postinstall": "node scripts/patch-localhost.mjs"
+  },
+  "dependencies": {
+    "@kobalab/majiang-server": "latest",
+    "@kobalab/mjai-bot": "latest"
+  }
+}

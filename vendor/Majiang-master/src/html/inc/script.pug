@@ -1,0 +1,4 @@
+include version
+script(src=`js/majiang-${version}.js` defer)
+- var pageAssetVersion = page == 'netplay' ? '?mortal=20261006-player-name1' : ''
+script(src=`js/${page}-${version}.js${pageAssetVersion}` defer)

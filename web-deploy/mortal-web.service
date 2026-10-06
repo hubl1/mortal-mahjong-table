@@ -1,0 +1,14 @@
+[Unit]
+Description=Mortal Mahjong web table
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/mortal-web
+ExecStart=%h/mortal-web/web-deploy/start-web.sh
+Restart=on-failure
+RestartSec=3
+KillMode=control-group
+
+[Install]
+WantedBy=default.target

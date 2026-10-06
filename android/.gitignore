@@ -1,0 +1,13 @@
+toolchain/
+native/target/
+native/upstream/target/
+model/*.onnx
+model/*.ort
+build/
+*.apk
+app/build/
+app/src/main/assets/model/
+app/src/main/assets/table/
+app/src/main/jniLibs/
+.gradle/
+local.properties

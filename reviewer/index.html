@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Mortal 决策研究室</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">M</span>
+        <div>
+          <h1>Mortal 决策研究室</h1>
+          <p>电脑麻将 AI × Mortal · 完全离线</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="ghost-button" id="open-file">打开 decisions.json</button>
+        <input id="file-input" type="file" accept="application/json,.json" hidden>
+        <button class="ghost-button" id="help-button" aria-expanded="false">使用说明</button>
+      </div>
+    </header>
+
+    <section class="overview" aria-label="整场摘要">
+      <div class="overview-title">
+        <span class="status-dot"></span>
+        <div>
+          <strong id="dataset-title">载入示例对局…</strong>
+          <span id="dataset-subtitle">正在读取本地比较结果</span>
+        </div>
+      </div>
+      <div class="metric"><b id="metric-total">—</b><span>决策</span></div>
+      <div class="metric accent"><b id="metric-diff">—</b><span>分歧</span></div>
+      <div class="metric"><b id="metric-rate">—</b><span>分歧率</span></div>
+      <div class="metric"><b id="metric-rounds">—</b><span>局数</span></div>
+    </section>
+
+    <main class="workspace">
+      <section class="board-column">
+        <div class="board-toolbar">
+          <div class="round-nav">
+            <button class="icon-button" id="prev-round" title="上一局">‹</button>
+            <button class="round-pill" id="round-label">东一局</button>
+            <button class="icon-button" id="next-round" title="下一局">›</button>
+          </div>
+          <div class="filter-group" role="group" aria-label="筛选决策">
+            <button class="filter active" data-filter="all">全部</button>
+            <button class="filter" data-filter="diff">仅分歧</button>
+            <button class="filter" data-filter="riichi">立直</button>
+            <button class="filter" data-filter="call">鸣牌</button>
+            <button class="filter" data-filter="discard">弃牌</button>
+          </div>
+        </div>
+
+        <div class="board-wrap">
+          <div class="board" id="board">
+            <div class="wall wall-top" id="wall-top"></div>
+            <div class="wall wall-right" id="wall-right"></div>
+            <div class="wall wall-bottom" id="wall-bottom"></div>
+            <div class="wall wall-left" id="wall-left"></div>
+
+            <div class="river river-top" id="river-top"></div>
+            <div class="river river-right" id="river-right"></div>
+            <div class="river river-bottom" id="river-bottom"></div>
+            <div class="river river-left" id="river-left"></div>
+
+            <div class="hand hand-top" id="hand-top"></div>
+            <div class="hand hand-right" id="hand-right"></div>
+            <div class="hand hand-bottom" id="hand-bottom"></div>
+            <div class="hand hand-left" id="hand-left"></div>
+
+            <div class="table-center">
+              <div class="center-head">
+                <strong id="center-round">东一局</strong>
+                <span id="tiles-left">余 69</span>
+              </div>
+              <div class="dora-row"><span>宝牌</span><div id="dora"></div></div>
+              <div class="score-grid" id="score-grid"></div>
+            </div>
+
+            <div class="event-chip" id="event-chip">摸牌</div>
+          </div>
+        </div>
+
+        <div class="transport">
+          <button class="transport-button" id="prev-diff" title="上一个分歧">⇤ <span>上一分歧</span></button>
+          <button class="transport-button primary" id="prev-decision">‹</button>
+          <div class="decision-position">
+            <strong id="decision-position">1 / 141</strong>
+            <span id="decision-event">摸 s5</span>
+          </div>
+          <button class="transport-button primary" id="next-decision">›</button>
+          <button class="transport-button" id="next-diff"><span>下一分歧</span> ⇥</button>
+        </div>
+
+        <div class="timeline-panel">
+          <div class="timeline-head">
+            <span>整局时间轴</span>
+            <span class="legend"><i class="same-dot"></i>一致 <i class="diff-dot"></i>分歧</span>
+          </div>
+          <div class="timeline" id="timeline"></div>
+        </div>
+      </section>
+
+      <aside class="analysis-column">
+        <section class="verdict-card" id="verdict-card">
+          <div class="eyebrow">当前决策</div>
+          <h2 id="verdict-title">两者选择一致</h2>
+          <p id="verdict-detail">载入中…</p>
+          <div class="choice-versus">
+            <div class="choice computer-choice">
+              <span>电脑麻将 AI</span>
+              <strong id="computer-action">—</strong>
+            </div>
+            <div class="versus">VS</div>
+            <div class="choice mortal-choice">
+              <span>Mortal</span>
+              <strong id="mortal-action">—</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel candidate-panel">
+          <div class="panel-head">
+            <div>
+              <span class="eyebrow">Mortal</span>
+              <h3>候选概率</h3>
+            </div>
+            <span class="shanten" id="mortal-shanten">— 向听</span>
+          </div>
+          <div class="candidate-list" id="mortal-candidates"></div>
+        </section>
+
+        <section class="panel candidate-panel">
+          <div class="panel-head">
+            <div>
+              <span class="eyebrow">电脑麻将 AI</span>
+              <h3>候选估值</h3>
+            </div>
+            <span class="shanten" id="computer-shanten">— 向听</span>
+          </div>
+          <div class="candidate-list" id="computer-candidates"></div>
+        </section>
+
+        <section class="panel context-panel">
+          <div class="panel-head"><h3>局面信息</h3></div>
+          <dl id="context-list"></dl>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <dialog id="help-dialog">
+    <button class="dialog-close" id="help-close" aria-label="关闭">×</button>
+    <h2>使用说明</h2>
+    <p>默认自动打开最近一次电脑麻将 AI 与 Mortal 的比较结果。也可以点击“打开 decisions.json”，载入以后生成的任意对局。</p>
+    <ul>
+      <li><kbd>←</kbd> / <kbd>→</kbd>：前后决策</li>
+      <li><kbd>Shift</kbd> + <kbd>←</kbd> / <kbd>→</kbd>：前后分歧</li>
+      <li>时间轴中的黄色节点表示双方第一选择不同。</li>
+      <li>对手暗牌不会被推测，统一显示黄色牌背；其余河牌、鸣牌、分数与宝牌来自当时的真实局面。</li>
+    </ul>
+    <p class="note">“不同”不等于“错误”。概率接近或同价值牌也可能产生不同选择。</p>
+  </dialog>
+
+  <div class="toast" id="toast" role="status"></div>
+  <script src="./app.js"></script>
+</body>
+</html>

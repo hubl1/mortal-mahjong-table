@@ -1,0 +1,13 @@
+[Unit]
+Description=FRP tunnel for Mortal Mahjong web table
+After=network-online.target mortal-web.service
+Wants=mortal-web.service
+
+[Service]
+Type=simple
+ExecStart=/opt/frp/frpc -c %h/mortal-web/web-deploy/frpc-web.ini
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
