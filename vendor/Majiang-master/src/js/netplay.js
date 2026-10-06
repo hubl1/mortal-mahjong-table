@@ -712,8 +712,21 @@ $(function(){
 
     if (localMode) applyLocalTileSkin();
 
-    const pai   = Majiang.UI.pai($('#loaddata'));
-    const audio = Majiang.UI.audio($('#loaddata'));
+    const pai = Majiang.UI.pai($('#loaddata'));
+    const createAudio = Majiang.UI.audio($('#loaddata'));
+    const audio = name=>{
+        const node = createAudio(name);
+        // Upstream waits for `canplaythrough` before applying the declared
+        // volume.  A fast first event can therefore play once at the browser's
+        // default 100% volume.  Apply it synchronously as well so the opening
+        // discard has exactly the same level as every later sound.
+        const declared = node.getAttribute('volume');
+        const initial = Number(declared);
+        if (declared != null && Number.isFinite(initial)) {
+            node.volume = Math.max(0, Math.min(1, initial));
+        }
+        return node;
+    };
     const adviceUI = localMode ? installAdviceUI() : null;
 
     function unlockRemoteAudio() {
