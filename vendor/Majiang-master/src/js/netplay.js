@@ -49,7 +49,7 @@ function normalizeLocalPlayerName(value) {
         .slice(0, 20);
 }
 
-function requestRemotePlayerName() {
+function requestRemotePlayerName(unlockAudio = ()=>{}) {
     if (! remoteWebMode) return Promise.resolve(localPlayerName);
 
     const saved = normalizeLocalPlayerName(
@@ -57,7 +57,31 @@ function requestRemotePlayerName() {
     );
     if (saved) {
         localPlayerName = saved;
-        return Promise.resolve(saved);
+        return new Promise(resolve=>{
+            $('body').append(`
+              <div id="mortal-name-panel">
+                <div class="name-card returning-player">
+                  <h1>Mortal 麻将</h1>
+                  <p>欢迎回来，${resultText(saved)}</p>
+                  <button class="enter-table" type="button">进入牌桌</button>
+                  <small>点击进入会同时启用对局音效</small>
+                  <div class="source-offer">
+                    <strong>本项目开源</strong>
+                    <a href="https://github.com/hubl1/mortal-mahjong-table"
+                       target="_blank" rel="noopener noreferrer">查看源代码与许可证 →</a>
+                  </div>
+                </div>
+              </div>`);
+            const panel = $('#mortal-name-panel');
+            $('.enter-table', panel).on('click', ()=>{
+                // HTML media with sound may only be started inside a user
+                // gesture.  Prime it here, before the automatic room join,
+                // so the opening discards are audible as well.
+                unlockAudio();
+                panel.remove();
+                resolve(saved);
+            });
+        });
     }
 
     return new Promise(resolve=>{
@@ -90,6 +114,7 @@ function requestRemotePlayerName() {
             }
             localPlayerName = name;
             localStorage.setItem('Mortal.playerName', name);
+            unlockAudio();
             panel.remove();
             resolve(name);
         });
@@ -691,6 +716,23 @@ $(function(){
     const audio = Majiang.UI.audio($('#loaddata'));
     const adviceUI = localMode ? installAdviceUI() : null;
 
+    function unlockRemoteAudio() {
+        if (! remoteWebMode) return;
+        const sample = audio('beep');
+        // Keep the priming playback completely silent.  The user gesture, not
+        // an audible notification, is what unlocks subsequent table sounds.
+        sample.oncanplaythrough = null;
+        sample.volume = 0;
+        const playing = sample.play();
+        if (playing?.then) {
+            playing.then(()=>{
+                sample.pause();
+                sample.removeAttribute('src');
+                sample.load();
+            }).catch(()=>{});
+        }
+    }
+
     const analyzer = (kaiju)=>{
         $('body').addClass('analyzer');
         return new Majiang.UI.Analyzer($('#board > .analyzer'), kaiju, pai,
@@ -1165,7 +1207,7 @@ $(function(){
     $(window).on('resize', fitBoard);
 
     $(window).on('load', ()=>setTimeout(()=>{
-        requestRemotePlayerName().then(init);
+        requestRemotePlayerName(unlockRemoteAudio).then(init);
     }, 500));
     if (loaded) $(window).trigger('load');
 
